@@ -7,9 +7,9 @@ import json
 import csv
 from tkinter import filedialog
 import time
-import winsound   # For sound (Windows only)
+import winsound   #For sound (Windows only)
 
-# ================== ORIGINAL LOGIC (UNCHANGED) ==================
+#ORIGINAL LOGIC
 
 COMMON_SERVICES = {
     21: "FTP",
@@ -116,7 +116,7 @@ class PortScanner:
     def stop_scan(self):
         self.running = False
 
-# ================== LOGIN SCREEN ==================
+#LOGIN SCREEN
 
 class Login(ctk.CTk):
     def __init__(self):
@@ -125,17 +125,17 @@ class Login(ctk.CTk):
         self.title("Authentication Required")
         self.geometry("400x300")
 
-        # Dark Green Hacker Theme
+        #Dark Green Hacker Theme
         ctk.set_appearance_mode("dark")
-        self.configure(fg_color="#02150b")  # Main background
+        self.configure(fg_color="#02150b")  #Main Background
 
-        # Container Frame
+        #Container Frame
         self.container = ctk.CTkFrame(self,
                                       fg_color="#000000",
                                       corner_radius=15)
         self.container.pack(expand=True, fill="both", padx=20, pady=20)
 
-        # Header
+        #Header
         ctk.CTkLabel(
             self.container,
             text="🔐 Authentication Panel",
@@ -143,7 +143,7 @@ class Login(ctk.CTk):
             text_color="#1f8f4e"
         ).pack(pady=20)
 
-        # Username Entry
+        #Username Entry
         self.user = ctk.CTkEntry(
             self.container,
             placeholder_text="Username",
@@ -153,7 +153,7 @@ class Login(ctk.CTk):
         )
         self.user.pack(pady=10, padx=40)
 
-        # Password Entry
+        #Password Entry
         self.passw = ctk.CTkEntry(
             self.container,
             placeholder_text="Password",
@@ -164,7 +164,7 @@ class Login(ctk.CTk):
         )
         self.passw.pack(pady=10, padx=40)
 
-        # Login Button
+        #Login Button
         ctk.CTkButton(
             self.container,
             text="Login",
@@ -183,7 +183,7 @@ class Login(ctk.CTk):
         else:
             winsound.Beep(400, 200)
 
-# ================== MAIN APP ==================
+#MAIN APP
 
 class App(ctk.CTk):
     def __init__(self):
@@ -270,7 +270,7 @@ class App(ctk.CTk):
                                       font=("Consolas", 12))
         self.textbox.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # ---------------- FEATURES ----------------
+    #FEATURES
 
     def toggle_fullscreen(self):
         self.attributes("-fullscreen", not self.attributes("-fullscreen"))
@@ -312,7 +312,7 @@ class App(ctk.CTk):
         if "OPEN PORT" in text:
             winsound.Beep(1000, 100)
 
-            # Severity color coding
+            #Severity Color Coding
             if any(p in text for p in ["21", "23", "25"]):
                 tag = "high"
                 color = "#7f1d1d"
@@ -342,7 +342,7 @@ class App(ctk.CTk):
         value = self.scanner.scanned_ports / self.total_ports
         self.progress.set(value)
 
-# ================== RUN ==================
+#RUN
 
 if __name__ == "__main__":
     login = Login()
