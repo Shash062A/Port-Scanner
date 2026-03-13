@@ -342,7 +342,7 @@ class App(ctk.CTk):
         value = self.scanner.scanned_ports / self.total_ports
         self.progress.set(value)
 
-#RUN
+#RUN The Whole Tool
 
 if __name__ == "__main__":
     login = Login()
