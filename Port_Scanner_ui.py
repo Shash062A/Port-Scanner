@@ -1,3 +1,4 @@
+
 import customtkinter as ctk
 import threading
 import socket
@@ -8,24 +9,65 @@ import csv
 from tkinter import filedialog
 import time
 import winsound   #For sound (Windows only)
+import psutil
 
 #ORIGINAL LOGIC
 
 COMMON_SERVICES = {
+    20: "FTP-DATA",
     21: "FTP",
     22: "SSH",
     23: "Telnet",
     25: "SMTP",
     53: "DNS",
+    67: "DHCP",
+    68: "DHCP",
     80: "HTTP",
     110: "POP3",
+    135: "MS-RPC",
+    139: "NetBIOS",
     143: "IMAP",
     443: "HTTPS",
+    445: "SMB",
     3306: "MySQL",
+    3389: "RDP",
+    5432: "PostgreSQL",
+    5900: "VNC",
     8080: "HTTP-ALT"
 }
 
 MAX_THREADS = 100
+
+
+# SERVICE IDENTIFICATION
+
+def identify_local_process(port):
+    try:
+        for conn in psutil.net_connections(kind="tcp"):
+
+            if (conn.laddr and
+                conn.laddr.port == port and
+                conn.status == psutil.CONN_LISTEN):
+
+                if conn.pid is None:
+                    return "Unknown", "Unknown"
+
+                process = psutil.Process(conn.pid)
+
+                return process.name(), conn.pid
+
+        return "Not Found", "N/A"
+
+    except (psutil.AccessDenied, psutil.NoSuchProcess):
+        return "Access Denied", "N/A"
+
+
+def identify_service(port):
+    try:
+        return socket.getservbyport(port, "tcp").upper()
+    except OSError:
+        return COMMON_SERVICES.get(port, "Unknown")
+
 
 class PortScanner:
     def __init__(self, ui):
@@ -54,12 +96,19 @@ class PortScanner:
             result = sock.connect_ex((ip, port))
 
             if result == 0:
-                service = COMMON_SERVICES.get(port, "Unknown")
+                service = identify_service(port)
+
+                process_name, pid = identify_local_process(port)
+
                 banner = self.banner_grab(sock)
 
                 with self.lock:
-                    self.open_ports[port] = \
-                        f"Open | Service: {service} | Banner: {banner}"
+                    self.open_ports[port] = (
+                        f"Open | Service: {service} | "
+                        f"Process: {process_name} | "
+                        f"PID: {pid} | "
+                        f"Banner: {banner}"
+                    )
 
                     self.ui.add_result(
                         f"OPEN PORT {port} → {self.open_ports[port]}"
@@ -116,6 +165,7 @@ class PortScanner:
     def stop_scan(self):
         self.running = False
 
+
 #LOGIN SCREEN
 
 class Login(ctk.CTk):
@@ -127,7 +177,7 @@ class Login(ctk.CTk):
 
         #Dark Green Hacker Theme
         ctk.set_appearance_mode("dark")
-        self.configure(fg_color="#02150b")  #Main Background
+        self.configure(fg_color="#02150b")
 
         #Container Frame
         self.container = ctk.CTkFrame(self,
@@ -138,7 +188,7 @@ class Login(ctk.CTk):
         #Header
         ctk.CTkLabel(
             self.container,
-            text="🔐 Authentication Panel",
+            text="🔐 Admin Authentication Panel",
             font=("Consolas", 18, "bold"),
             text_color="#1f8f4e"
         ).pack(pady=20)
@@ -183,13 +233,14 @@ class Login(ctk.CTk):
         else:
             winsound.Beep(400, 200)
 
+
 #MAIN APP
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("System Port Scanner For Penetration")
+        self.title("System Port Scanner For Penetration Testing")
         self.geometry("1100x700")
         self.configure(fg_color="#011f14")
 
@@ -210,23 +261,27 @@ class App(ctk.CTk):
 
         ctk.CTkLabel(self.sidebar,
                      text="SYSTEM PORTS",
-                     font=("Consolas", 16, "bold"),justify="center",
+                     font=("Consolas", 16, "bold"), justify="center",
                      text_color="#1f8f4e").pack(pady=10)
 
-        self.host = ctk.CTkEntry(self.sidebar, placeholder_text="Host",fg_color="#02150b",
-            text_color="#1f8f4e",border_color="#14532d",justify="center")
+        self.host = ctk.CTkEntry(self.sidebar, placeholder_text="Host",
+            fg_color="#02150b", text_color="#1f8f4e",
+            border_color="#14532d", justify="center")
         self.host.pack(pady=5, padx=10)
 
-        self.start_port = ctk.CTkEntry(self.sidebar, placeholder_text="Start Port",fg_color="#02150b",
-            text_color="#1f8f4e",border_color="#14532d",justify="center")
+        self.start_port = ctk.CTkEntry(self.sidebar, placeholder_text="Start Port",
+            fg_color="#02150b", text_color="#1f8f4e",
+            border_color="#14532d", justify="center")
         self.start_port.pack(pady=5, padx=10)
 
-        self.end_port = ctk.CTkEntry(self.sidebar, placeholder_text="End Port",fg_color="#02150b",
-            text_color="#1f8f4e",border_color="#14532d",justify="center")
+        self.end_port = ctk.CTkEntry(self.sidebar, placeholder_text="End Port",
+            fg_color="#02150b", text_color="#1f8f4e",
+            border_color="#14532d", justify="center")
         self.end_port.pack(pady=5, padx=10)
 
-        self.delay = ctk.CTkEntry(self.sidebar, placeholder_text="Delay {0.001}",fg_color="#02150b",
-            text_color="#1f8f4e",border_color="#14532d",justify="center")
+        self.delay = ctk.CTkEntry(self.sidebar, placeholder_text="Delay {0.001}",
+            fg_color="#02150b", text_color="#1f8f4e",
+            border_color="#14532d", justify="center")
         self.delay.pack(pady=5, padx=10)
 
         ctk.CTkButton(self.sidebar, text="Start Scan",
@@ -341,6 +396,7 @@ class App(ctk.CTk):
     def update_progress(self):
         value = self.scanner.scanned_ports / self.total_ports
         self.progress.set(value)
+
 
 #RUN The Whole Tool
 
